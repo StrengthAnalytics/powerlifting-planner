@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Powerlifting Gameday Planner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  /* Centering */
+  .pl-form-container label,
+  .pl-attempt-label,
+  .pl-warmup-grid > div { text-align:center; }
+  .pl-form-container input,
+  .pl-form-container select,
+  .pl-weight-input,
+  .pl-warmup-grid input { text-align:center; }
+  .pl-form-container input,
+  .pl-form-container select { width:100%; padding:8px; }
+
+  /* Mobile warm-up grid */
+  .pl-warmup-grid{
+    display:grid !important;
+    grid-template-columns: 48px minmax(0,1fr) minmax(0,1fr) !important;
+    gap:8px; width:100% !important; max-width:100% !important;
+  }
+  .pl-warmup-grid > *{ min-width:0 !important; }
+  .pl-warmup-grid input{ width:100% !important; max-width:100% !important; min-width:0 !important; }
+  @media (max-width: 480px){
+    .pl-warmup-grid{ grid-template-columns: 38px minmax(0,1fr) minmax(0,1fr) !important; gap:6px; }
+    .pl-form-container input, .pl-form-container select{ padding:6px; }
+    .pl-attempts-grid{ grid-template-columns: 1fr !important; }
+  }
+</style>
+</head>
+<body>
+<div class="pl-calculator-wrapper" style="font-family: Arial, sans-serif; max-width: 100%; padding: 10px;">
+  <div class="pl-container" style="background: white; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width:100%; max-width:100%;">
+    <div class="pl-header" style="background:#000; color: white; padding: 20px; text-align: center;">
+      <h2 style="margin: 0 0 8px 0;">POWERLIFTING MEET PREP</h2>
+      <p style="margin: 0;">Plan your competition strategy</p>
+    </div>
+
+    <div class="pl-form-container" style="padding: 20px;">
+      <!-- Competition Details -->
+      <div class="pl-form-section" style="background: #f7f7f7; padding: 20px; margin-bottom: 20px; border-radius: 8px; border-left: 4px solid #000;">
+        <h3 style="color: #2c3e50; font-weight: bold; margin-bottom: 15px;">Competition Details</h3>
+        <div class="pl-form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+          <div class="pl-form-group"><label for="eventName">Event Name</label><input id="eventName" placeholder="Enter competition name" /></div>
+          <div class="pl-form-group"><label for="lifterName">Lifter Name</label><input id="lifterName" placeholder="Enter your name" /></div>
+          <div class="pl-form-group"><label for="weightClass">Weight Class</label><input id="weightClass" placeholder="e.g. 83kg" /></div>
+          <div class="pl-form-group"><label for="competitionDate">Competition Date</label><input type="date" id="competitionDate" /></div>
+          <div class="pl-form-group"><label for="weighInTime">Weigh-in Time</label><input type="time" id="weighInTime" /></div>
+        </div>
+      </div>
+
+      <!-- Equipment Settings -->
+      <div class="pl-form-section" style="background: #f7f7f7; padding: 20px; margin-bottom: 20px; border-radius: 8px; border-left: 4px solid #000;">
+        <h3 style="color: #2c3e50; font-weight: bold; margin-bottom: 15px;">Equipment Settings</h3>
+        <div class="pl-form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+          <div class="pl-form-group"><label for="squatRackHeight">Squat Rack Height</label><input id="squatRackHeight" placeholder="e.g. 5" /></div>
+          <div class="pl-form-group"><label for="squatStands">Squat Stands</label>
+            <select id="squatStands"><option value="">Select option</option><option>IN</option><option>OUT</option><option>LEFT IN</option><option>RIGHT IN</option></select>
+          </div>
+          <div class="pl-form-group"><label for="benchRackHeight">Bench Rack Height</label><input id="benchRackHeight" placeholder="e.g. 3" /></div>
+          <div class="pl-form-group"><label for="handOut">Hand Out</label>
+            <select id="handOut"><option value="">Select option</option><option>Yes</option><option>Self</option></select>
+          </div>
+          <div class="pl-form-group"><label for="benchSafetyHeight">Bench Safety Height</label><input id="benchSafetyHeight" placeholder="e.g. 2" /></div>
+        </div>
+      </div>
+
+      <!-- SQUAT -->
+      <div class="pl-lift-section" style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="background:#000; color: white; padding: 10px; border-radius: 6px; text-align: center; margin: 0 0 20px 0;">SQUAT</h3>
+        <div class="pl-attempts-section" style="background: #f0f0f0; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+          <h4 style="text-align: center; color: #2c3e50; font-weight: bold; margin-bottom: 15px;">Competition Attempts</h4>
+          <div class="pl-attempts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+            <div class="pl-attempt-group"><div class="pl-attempt-label">1st Attempt</div><div><input type="number" id="squat1" class="pl-weight-input" step="2.5" placeholder="Enter weight" /></div><div class="pl-error" id="squatErr" style="color:#c0392b;font-size:12px;display:none;">Enter opener or 3rd attempt.</div></div>
+            <div class="pl-attempt-group"><div class="pl-attempt-label">2nd Attempt</div><div><input type="number" id="squat2" class="pl-weight-input" step="2.5" placeholder="Enter weight" /></div></div>
+            <div class="pl-attempt-group"><div class="pl-attempt-label">3rd Attempt</div><div><input type="number" id="squat3" class="pl-weight-input" step="2.5" placeholder="Enter weight" /></div></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+            <button id="btnSquatCalc"    type="button" class="pl-btn" style="background:#000;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">📊 Calculate Attempts</button>
+            <button id="btnSquatWU"      type="button" class="pl-btn" style="background:#000;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">🔥 Generate Warm-Ups</button>
+            <button id="btnSquatReset"   type="button" class="pl-btn" style="background:#95a5a6;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">↩️ Reset Squat</button>
+          </div>
+        </div>
+        <div class="pl-warmup-grid">
+          <div style="background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; border-radius: 4px;">Set</div>
+          <div style="background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; border-radius: 4px;">Weight (KG)</div>
+          <div style="background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; border-radius: 4px;">Reps</div>
+          <div>1</div><input type="number" id="squatWarmup1Weight" step="2.5" placeholder="Weight" /><input id="squatWarmup1Reps" placeholder="Reps" />
+          <div>2</div><input type="number" id="squatWarmup2Weight" step="2.5" placeholder="Weight" /><input id="squatWarmup2Reps" placeholder="Reps" />
+          <div>3</div><input type="number" id="squatWarmup3Weight" step="2.5" placeholder="Weight" /><input id="squatWarmup3Reps" placeholder="Reps" />
+          <div>4</div><input type="number" id="squatWarmup4Weight" step="2.5" placeholder="Weight" /><input id="squatWarmup4Reps" placeholder="Reps" />
+          <div>5</div><input type="number" id="squatWarmup5Weight" step="2.5" placeholder="Weight" /><input id="squatWarmup5Reps" placeholder="Reps" />
+          <div>6</div><input type="number" id="squatWarmup6Weight" step="2.5" placeholder="Weight" /><input id="squatWarmup6Reps" placeholder="Reps" />
+          <div>7</div><input type="number" id="squatWarmup7Weight" step="2.5" placeholder="Weight" /><input id="squatWarmup7Reps" placeholder="Reps" />
+          <div>8</div><input type="number" id="squatWarmup8Weight" step="2.5" placeholder="Weight" /><input id="squatWarmup8Reps" placeholder="Reps" />
+        </div>
+        <div id="squatPlates" style="margin-top:8px;color:#2c3e50;font-size:13px;"></div>
+      </div>
+
+      <!-- BENCH -->
+      <div class="pl-lift-section" style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="background:#000; color: white; padding: 10px; border-radius: 6px; text-align: center; margin: 0 0 20px 0;">BENCH PRESS</h3>
+        <div class="pl-attempts-section" style="background: #f0f0f0; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+          <h4 style="text-align: center; color: #2c3e50; font-weight: bold; margin-bottom: 15px;">Competition Attempts</h4>
+          <div class="pl-attempts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+            <div class="pl-attempt-group"><div class="pl-attempt-label">1st Attempt</div><div><input type="number" id="bench1" class="pl-weight-input" step="2.5" placeholder="Enter weight" /></div><div class="pl-error" id="benchErr" style="color:#c0392b;font-size:12px;display:none;">Enter opener or 3rd attempt.</div></div>
+            <div class="pl-attempt-group"><div class="pl-attempt-label">2nd Attempt</div><div><input type="number" id="bench2" class="pl-weight-input" step="2.5" placeholder="Enter weight" /></div></div>
+            <div class="pl-attempt-group"><div class="pl-attempt-label">3rd Attempt</div><div><input type="number" id="bench3" class="pl-weight-input" step="2.5" placeholder="Enter weight" /></div></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+            <button id="btnBenchCalc"   type="button" class="pl-btn" style="background:#000;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">📊 Calculate Attempts</button>
+            <button id="btnBenchWU"     type="button" class="pl-btn" style="background:#000;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">🔥 Generate Warm-Ups</button>
+            <button id="btnBenchReset"  type="button" class="pl-btn" style="background:#95a5a6;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">↩️ Reset Bench</button>
+          </div>
+        </div>
+        <div class="pl-warmup-grid">
+          <div style="background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; border-radius: 4px;">Set</div>
+          <div style="background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; border-radius: 4px;">Weight (KG)</div>
+          <div style="background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; border-radius: 4px;">Reps</div>
+          <div>1</div><input type="number" id="benchWarmup1Weight" step="2.5" placeholder="Weight" /><input id="benchWarmup1Reps" placeholder="Reps" />
+          <div>2</div><input type="number" id="benchWarmup2Weight" step="2.5" placeholder="Weight" /><input id="benchWarmup2Reps" placeholder="Reps" />
+          <div>3</div><input type="number" id="benchWarmup3Weight" step="2.5" placeholder="Weight" /><input id="benchWarmup3Reps" placeholder="Reps" />
+          <div>4</div><input type="number" id="benchWarmup4Weight" step="2.5" placeholder="Weight" /><input id="benchWarmup4Reps" placeholder="Reps" />
+          <div>5</div><input type="number" id="benchWarmup5Weight" step="2.5" placeholder="Weight" /><input id="benchWarmup5Reps" placeholder="Reps" />
+          <div>6</div><input type="number" id="benchWarmup6Weight" step="2.5" placeholder="Weight" /><input id="benchWarmup6Reps" placeholder="Reps" />
+          <div>7</div><input type="number" id="benchWarmup7Weight" step="2.5" placeholder="Weight" /><input id="benchWarmup7Reps" placeholder="Reps" />
+          <div>8</div><input type="number" id="benchWarmup8Weight" step="2.5" placeholder="Weight" /><input id="benchWarmup8Reps" placeholder="Reps" />
+        </div>
+        <div id="benchPlates" style="margin-top:8px;color:#2c3e50;font-size:13px;"></div>
+      </div>
+
+      <!-- DEADLIFT -->
+      <div class="pl-lift-section" style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="background:#000; color: white; padding: 10px; border-radius: 6px; text-align: center; margin: 0 0 20px 0;">DEADLIFT</h3>
+        <div class="pl-attempts-section" style="background: #f0f0f0; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+          <h4 style="text-align: center; color: #2c3e50; font-weight: bold; margin-bottom: 15px;">Competition Attempts</h4>
+          <div class="pl-attempts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+            <div class="pl-attempt-group"><div class="pl-attempt-label">1st Attempt</div><div><input type="number" id="deadlift1" class="pl-weight-input" step="2.5" placeholder="Enter weight" /></div><div class="pl-error" id="deadErr" style="color:#c0392b;font-size:12px;display:none;">Enter opener or 3rd attempt.</div></div>
+            <div class="pl-attempt-group"><div class="pl-attempt-label">2nd Attempt</div><div><input type="number" id="deadlift2" class="pl-weight-input" step="2.5" placeholder="Enter weight" /></div></div>
+            <div class="pl-attempt-group"><div class="pl-attempt-label">3rd Attempt</div><div><input type="number" id="deadlift3" class="pl-weight-input" step="2.5" placeholder="Enter weight" /></div></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+            <button id="btnDeadCalc"   type="button" class="pl-btn" style="background:#000;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">📊 Calculate Attempts</button>
+            <button id="btnDeadWU"     type="button" class="pl-btn" style="background:#000;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">🔥 Generate Warm-Ups</button>
+            <button id="btnDeadReset"  type="button" class="pl-btn" style="background:#95a5a6;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">↩️ Reset Deadlift</button>
+          </div>
+        </div>
+        <div class="pl-warmup-grid">
+          <div style="background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; border-radius: 4px;">Set</div>
+          <div style="background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; border-radius: 4px;">Weight (KG)</div>
+          <div style="background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; border-radius: 4px;">Reps</div>
+          <div>1</div><input type="number" id="deadliftWarmup1Weight" step="2.5" placeholder="Weight" /><input id="deadliftWarmup1Reps" placeholder="Reps" />
+          <div>2</div><input type="number" id="deadliftWarmup2Weight" step="2.5" placeholder="Weight" /><input id="deadliftWarmup2Reps" placeholder="Reps" />
+          <div>3</div><input type="number" id="deadliftWarmup3Weight" step="2.5" placeholder="Weight" /><input id="deadliftWarmup3Reps" placeholder="Reps" />
+          <div>4</div><input type="number" id="deadliftWarmup4Weight" step="2.5" placeholder="Weight" /><input id="deadliftWarmup4Reps" placeholder="Reps" />
+          <div>5</div><input type="number" id="deadliftWarmup5Weight" step="2.5" placeholder="Weight" /><input id="deadliftWarmup5Reps" placeholder="Reps" />
+          <div>6</div><input type="number" id="deadliftWarmup6Weight" step="2.5" placeholder="Weight" /><input id="deadliftWarmup6Reps" placeholder="Reps" />
+          <div>7</div><input type="number" id="deadliftWarmup7Weight" step="2.5" placeholder="Weight" /><input id="deadliftWarmup7Reps" placeholder="Reps" />
+          <div>8</div><input type="number" id="deadliftWarmup8Weight" step="2.5" placeholder="Weight" /><input id="deadliftWarmup8Reps" placeholder="Reps" />
+        </div>
+        <div id="deadliftPlates" style="margin-top:8px;color:#2c3e50;font-size:13px;"></div>
+      </div>
+
+      <!-- Export -->
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="btnPDF" type="button" class="pl-btn" style="background:#000;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">🧾 Export PDF</button>
+        <button id="btnCSV" type="button" class="pl-btn" style="background:#16a085;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">📥 Export CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ======= PERSISTENCE (attempts/warm-ups NOT persisted) ======= */
+(function(){
+  const saveList = [
+    'eventName','lifterName','weightClass','competitionDate','weighInTime',
+    'squatRackHeight','squatStands','benchRackHeight','handOut','benchSafetyHeight'
+  ];
+  const save=(id,val)=>{ if(saveList.includes(id)) try{ localStorage.setItem('pl_'+id, val);}catch(e){} };
+  const restore=(id)=>{ try{ return localStorage.getItem('pl_'+id);}catch(e){ return null; } };
+  window.addEventListener('input',(e)=>{ const el=e.target; if(el && el.id) save(el.id, el.value); });
+  window.addEventListener('DOMContentLoaded',()=>{
+    saveList.forEach(id=>{ const el=document.getElementById(id); const v=restore(id); if(el && v!==null) el.value=v; });
+    ['squat','bench','deadlift'].forEach(p=>{
+      for(let i=1;i<=3;i++){ const el=document.getElementById(p+i); if(el) el.value=''; }
+      for(let i=1;i<=8;i++){
+        const w=document.getElementById(`${p}Warmup${i}Weight`);
+        const r=document.getElementById(`${p}Warmup${i}Reps`);
+        if(w) w.value='';
+        if(r) r.value='';
+      }
+    });
+  });
+})();
+
+/* ======= VALIDATION ======= */
+function need(fieldIds, errId){
+  const has = fieldIds.some(id => !!document.getElementById(id).value);
+  const err = document.getElementById(errId);
+  fieldIds.forEach(id=>{ const el = document.getElementById(id); el.style.borderColor = has ? '#ccc' : '#c0392b'; el.style.borderWidth = '1px'; el.style.borderStyle = 'solid'; });
+  if(err) err.style.display = has ? 'none' : 'block';
+  return has;
+}
+
+/* ======= ATTEMPT CALC PERCENTAGES ======= */
+const attemptPercentages = {
+  squat:   { fromThird:{first:0.9234, second:0.9719}, fromOpener:{second:1.0527, third:1.0832} },
+  bench:   { fromThird:{first:0.9319, second:0.9745}, fromOpener:{second:1.0455, third:1.0730} },
+  deadlift:{ fromThird:{first:0.9118, second:0.9667}, fromOpener:{second:1.0604, third:1.0969} }
+};
+const round2_5 = v => Math.round(v/2.5)*2.5;
+
+/* ======= LOOKUPS (built in, exact match) ======= */
+const squatWarmups = { 40:[30,35], 42.5:[30,37.5], 45:[30,35,40], 47.5:[30,37.5,42.5],
+  50:[30,37.5,45], 52.5:[30,40,47.5], 55:[30,40,45,50], 57.5:[30,40,47.5,52.5],
+  60:[30,40,50,55], 62.5:[35,45,52.5,57.5], 65:[40,50,55,60], 67.5:[40,50,57.5,62.5],
+  70:[40,50,60,65], 72.5:[40,55,62.5,67.5], 75:[45,55,62.5,70], 77.5:[45,55,65,72.5],
+  80:[45,60,67.5,75], 82.5:[45,60,70,77.5], 85:[45,60,72.5,80], 87.5:[50,65,75,82.5],
+  90:[50,65,75,82.5], 92.5:[50,65,77.5,85], 95:[50,70,80,87.5], 97.5:[50,70,82.5,90],
+  100:[50,70,85,92.5], 102.5:[50,70,87.5,95], 105:[50,70,87.5,97.5], 107.5:[50,70,90,100],
+  110:[60,80,92.5,102.5], 112.5:[60,80,95,105], 115:[60,80,97.5,107.5], 117.5:[60,80,100,110],
+  120:[60,80,92.5,102.5,112.5], 122.5:[60,80,95,105,115], 125:[60,80,97.5,107.5,117.5],
+  127.5:[60,80,97.5,107.5,117.5], 130:[60,80,100,110,120], 132.5:[70,90,102.5,112.5,122.5],
+  135:[70,90,102.5,115,125], 137.5:[70,90,102.5,115,127.5], 140:[70,90,105,117.5,130],
+  142.5:[70,90,107.5,120,132.5], 145:[70,90,110,122.5,135], 147.5:[70,100,112.5,125,137.5],
+  150:[70,100,115,127.5,140], 152.5:[70,100,117.5,130,142.5], 155:[70,100,120,132.5,145],
+  157.5:[70,100,122.5,135,147.5], 160:[70,100,125,137.5,150], 162.5:[70,100,125,137.5,150],
+  165:[70,100,125,140,152.5], 167.5:[70,100,125,140,155], 170:[70,110,127.5,142.5,157.5],
+  172.5:[70,110,130,145,160], 175:[70,110,132.5,147.5,162.5], 177.5:[70,110,135,150,165],
+  180:[70,110,137.5,152.5,167.5], 182.5:[70,110,140,155,170], 185:[70,120,142.5,157.5,172.5],
+  187.5:[70,120,145,160,175], 190:[70,120,147.5,162.5,177.5], 192.5:[70,120,147.5,165,180],
+  195:[70,120,147.5,165,182.5], 197.5:[70,120,147.5,165,182.5], 200:[70,120,150,167.5,185],
+  202.5:[70,120,152.5,170,187.5], 205:[70,120,155,172.5,190], 207.5:[70,120,157.5,175,192.5],
+  210:[70,120,160,177.5,195], 212.5:[70,120,162.5,180,197.5], 215:[70,120,165,182.5,200],
+  217.5:[70,120,167.5,185,202.5], 220:[70,120,170,187.5,205], 222.5:[70,120,170,190,207.5],
+  225:[70,120,170,190,210], 227.5:[70,120,170,192.5,212.5], 230:[70,120,170,192.5,215],
+  232.5:[70,120,170,192.5,215], 235:[70,120,170,195,217.5], 237.5:[70,120,170,197.5,220],
+  240:[70,120,170,200,222.5], 242.5:[70,120,170,202.5,225], 245:[70,120,170,205,227.5],
+  247.5:[70,120,170,207.5,230], 250:[70,120,170,210,232.5], 252.5:[70,120,170,212.5,235],
+  255:[70,120,170,215,237.5], 257.5:[70,120,170,215,240], 260:[70,120,170,217.5,242.5],
+  262.5:[70,120,170,220,245] };
+const benchWarmups = {
+  30:[25,27.5], 32.5:[25,30], 35:[25,30,32.5], 37.5:[25,30,35],
+  40:[30,35,37.5], 42.5:[30,35,40], 45:[30,35,40], 47.5:[30,37.5,42.5],
+  50:[30,37.5,45], 52.5:[30,40,47.5], 55:[30,40,45,50], 57.5:[35,42.5,47.5,52.5],
+  60:[35,45,50,55], 62.5:[35,47.5,52.5,57.5], 65:[40,50,55,60], 67.5:[40,50,57.5,62.5],
+  70:[40,52.5,60,65], 72.5:[40,52.5,60,67.5], 75:[45,55,62.5,70], 77.5:[45,57.5,65,72.5],
+  80:[50,60,67.5,75], 82.5:[50,62.5,70,77.5], 85:[50,65,72.5,80], 87.5:[50,65,72.5,80],
+  90:[50,67.5,75,82.5], 92.5:[50,60,70,77.5,85], 95:[50,60,70,80,87.5],
+  97.5:[50,65,72.5,82.5,90], 100:[50,65,75,85,92.5], 102.5:[50,65,75,85,95],
+  105:[50,65,77.5,87.5,97.5], 107.5:[50,65,80,90,100], 110:[50,70,82.5,92.5,102.5],
+  112.5:[60,70,85,95,105], 115:[60,70,87.5,97.5,107.5], 117.5:[60,70,90,100,110],
+  120:[60,70,90,100,110], 122.5:[60,70,90,102.5,112.5], 125:[60,80,92.5,105,115],
+  127.5:[60,80,95,107.5,117.5], 130:[60,80,97.5,110,120], 132.5:[60,80,97.5,110,122.5],
+  135:[60,80,100,112.5,125], 137.5:[70,90,102.5,115,127.5], 140:[70,90,105,117.5,130],
+  142.5:[70,90,107.5,120,132.5], 145:[70,90,110,122.5,135], 147.5:[70,100,112.5,125,137.5],
+  150:[70,100,112.5,127.5,140], 152.5:[70,100,115,130,142.5], 155:[70,100,115,130,142.5],
+  157.5:[70,100,117.5,132.5,145], 160:[70,100,120,135,147.5], 162.5:[70,100,120,135,150],
+  165:[70,100,122.5,137.5,152.5], 167.5:[70,100,125,140,155], 170:[70,110,127.5,142.5,157.5],
+  172.5:[70,110,130,145,160], 175:[70,110,132.5,147.5,162.5], 177.5:[70,110,132.5,150,165],
+  180:[70,110,135,152.5,167.5], 182.5:[70,110,137.5,155,170], 185:[70,110,140,157.5,172.5],
+  187.5:[70,110,140,157.5,175], 190:[70,110,140,157.5,175]
+};
+const deadliftWarmups = {
+  50:[30,37.5,45],52.5:[30,40,47.5],55:[30,40,50],57.5:[35,45,52.5],60:[35,45,55],62.5:[40,50,57.5],65:[40,50,60],67.5:[40,55,62.5],
+  70:[40,55,65],72.5:[40,55,67.5],75:[40,60,70],77.5:[40,60,70],
+  80:[40,52.5,62.5,72.5],82.5:[40,55,65,75],85:[40,57.5,67.5,77.5],87.5:[40,57.5,67.5,80],
+  90:[40,60,75,82.5],92.5:[40,60,75,82.5],95:[40,60,75,85],97.5:[40,60,75,87.5],100:[40,60,75,90],
+  102.5:[40,60,80,92.5],105:[40,60,80,95],107.5:[40,60,80,97.5],
+  110:[50,70,80,90,100],112.5:[50,70,85,90,102.5],115:[50,70,85,95,105],117.5:[50,70,85,95,105],
+  120:[50,70,85,100,110],122.5:[50,70,85,100,110],125:[50,70,85,100,112.5],127.5:[50,70,85,100,115],
+  130:[50,70,90,105,117.5],132.5:[50,70,90,105,120],135:[50,70,90,110,122.5],137.5:[50,70,90,110,125],140:[50,70,90,110,127.5],
+  142.5:[50,70,90,110,130],145:[50,70,90,110,130],
+  147.5:[60,80,100,120,135],150:[60,80,100,120,135],152.5:[60,80,100,120,140],155:[60,80,100,120,140],
+  157.5:[60,90,110,130,145],160:[60,90,110,130,145],162.5:[60,90,110,130,150],165:[60,90,110,130,150],
+  167.5:[60,90,110,130,150],170:[60,90,110,130,150],
+  172.5:[70,100,120,140,155],175:[70,100,120,140,160],177.5:[70,100,120,140,160],180:[70,100,120,140,160],
+  182.5:[70,100,125,150,170],185:[70,100,125,150,170],187.5:[70,100,125,150,170],190:[70,100,125,150,170],
+  192.5:[70,100,125,150,175],195:[70,100,125,150,175],
+  197.5:[70,100,130,160,177.5],200:[70,100,130,160,180],202.5:[70,100,130,160,182.5],205:[70,100,130,160,185],207.5:[70,100,130,160,187.5],210:[70,100,130,160,190],
+  212.5:[70,110,140,170,192.5],215:[70,110,140,170,195],217.5:[70,110,140,170,197.5],220:[70,110,140,170,197.5],222.5:[70,110,140,170,200],
+  225:[70,110,140,170,200],227.5:[70,110,140,170,200],
+  230:[70,120,150,180,207.5],232.5:[70,120,150,180,210],235:[70,120,150,180,210],237.5:[70,120,150,180,210],240:[70,120,150,180,210],
+  242.5:[70,120,160,190,220],245:[70,120,160,190,220],247.5:[70,120,160,190,220],250:[70,120,160,190,220],
+  252.5:[70,120,160,200,230],255:[70,120,160,200,230],257.5:[70,120,160,200,230],260:[70,120,160,200,230],
+  262.5:[70,120,170,210,240],265:[70,120,170,210,240],267.5:[70,120,170,210,240],270:[70,120,170,210,240],
+  272.5:[70,120,170,220,250],275:[70,120,170,220,250],277.5:[70,120,170,220,250],280:[70,120,170,220,250],
+  282.5:[70,120,170,220,260],285:[70,120,170,220,260],287.5:[70,120,170,220,260],290:[70,120,170,220,260],
+  292.5:[70,120,170,220,270],295:[70,120,170,220,270],297.5:[70,120,170,220,270],300:[70,120,170,220,270],
+  302.5:[70,120,170,220,270],305:[70,120,170,220,270],307.5:[70,120,170,220,270],310:[70,120,170,220,270],
+  312.5:[70,120,170,220,260,290],315:[70,120,170,220,260,290],317.5:[70,120,170,220,260,290],320:[70,120,170,220,260,290],
+  322.5:[70,120,170,220,260,300],325:[70,120,170,220,260,300],327.5:[70,120,170,220,260,300],330:[70,120,170,220,260,300],
+  332.5:[70,120,170,220,270,310],335:[70,120,170,220,270,310],337.5:[70,120,170,220,270,310],340:[70,120,170,220,270,310],
+  342.5:[70,120,170,220,270,310],345:[70,120,170,220,270,310],347.5:[70,120,170,220,270,310],350:[70,120,170,220,270,310],
+  352.5:[70,120,170,220,270,320],355:[70,120,170,220,270,320],357.5:[70,120,170,220,270,320],360:[70,120,170,220,270,320],
+  362.5:[70,120,170,220,270,320],365:[70,120,170,220,270,320],367.5:[70,120,170,220,270,320],370:[70,120,170,220,270,320],
+  372.5:[70,120,170,220,270,310,345],375:[70,120,170,220,270,310,345],377.5:[70,120,170,220,270,310,345],380:[70,120,170,220,270,310,345],
+  382.5:[70,120,170,220,270,310,350],385:[70,120,170,220,270,310,350],387.5:[70,120,170,220,270,310,350],390:[70,120,170,220,270,310,350]
+};
+
+/* Rep schemes */
+const squatRepSchemes   = { 3:[5,3,2], 4:[5,3,2,1], 5:[5,3,2,1,1], 6:[5,3,2,1,1,1], 7:[5,3,2,1,1,1,1] };
+const benchRepSchemes   = { 3:[8,5,3], 4:[8,5,3,1], 5:[8,5,3,1,1], 6:[8,5,3,1,1,1] };
+const deadliftRepSchemes= { 3:[5,3,2], 4:[5,3,2,1], 5:[5,3,2,1,1], 6:[5,3,2,1,1,1], 7:[5,3,2,1,1,1,1] };
+
+/* ======= Utilities ======= */
+function plateBreakdown(totalKG){
+  const plateSet = [25,20,15,10,5,2.5,1.25];
+  const t = parseFloat(totalKG);
+  if(!t || t<20) return 'bar only';
+  let perSide = (t - 20)/2, out=[];
+  for(const p of plateSet){ const cnt = Math.floor(perSide/p); if(cnt>0){ out.push(`${cnt}×${p}`); perSide -= cnt*p; } }
+  return out.length? out.join(' + ') : 'bar only';
+}
+
+/* ======= Attempts ======= */
+function calcAttempts(prefix, pctKey, errId){
+  const open = document.getElementById(prefix+'1').value;
+  const third = document.getElementById(prefix+'3').value;
+  const p = attemptPercentages[pctKey];
+  if(!open && !third){ if(!need([prefix+'1', prefix+'3'], errId)) return; }
+  if(third && !open){
+    const t=parseFloat(third);
+    document.getElementById(prefix+'1').value=round2_5(t*p.fromThird.first);
+    document.getElementById(prefix+'2').value=round2_5(t*p.fromThird.second);
+  } else if(open){
+    const o=parseFloat(open);
+    document.getElementById(prefix+'2').value=round2_5(o*p.fromOpener.second);
+    document.getElementById(prefix+'3').value=round2_5(o*p.fromOpener.third);
+  }
+}
+const calculateSquatAttempts    = ()=>calcAttempts('squat','squat','squatErr');
+const calculateBenchAttempts    = ()=>calcAttempts('bench','bench','benchErr');
+const calculateDeadliftAttempts = ()=>calcAttempts('deadlift','deadlift','deadErr');
+
+/* ======= Warm-ups (exact match) ======= */
+function genWarmups(prefix, lookup, repMap, platesOutId){
+  const openEl = document.getElementById(prefix+'1');
+  const openerVal = parseFloat(openEl.value);
+  const errId = prefix==='squat'?'squatErr':prefix==='bench'?'benchErr':'deadErr';
+  if (!openerVal){ const err=document.getElementById(errId); if(err) err.style.display='block'; openEl.style.borderColor='#c0392b'; return; }
+  else { const err=document.getElementById(errId); if(err) err.style.display='none'; openEl.style.borderColor='#ccc'; }
+
+  const warms = lookup[openerVal]; // exact key
+  for (let i=1;i<=8;i++){
+    const wEl=document.getElementById(`${prefix}Warmup${i}Weight`);
+    const rEl=document.getElementById(`${prefix}Warmup${i}Reps`);
+    if (warms && i<=warms.length){ wEl.value=warms[i-1]; rEl.value=(repMap[warms.length]||[])[i-1]||''; }
+    else { wEl.value=''; rEl.value=''; }
+  }
+  const platesOut = document.getElementById(platesOutId);
+  if (platesOut){
+    if(warms && warms.length){
+      const lastWU = warms[warms.length-1];
+      platesOut.textContent = `Plates for opener (${openerVal} kg): ${plateBreakdown(openerVal)} | Last WU (${lastWU} kg): ${plateBreakdown(lastWU)}`;
+    } else platesOut.textContent = '';
+  }
+}
+const generateSquatWarmups    = ()=>genWarmups('squat',   squatWarmups,   squatRepSchemes,   'squatPlates');
+const generateBenchWarmups    = ()=>genWarmups('bench',   benchWarmups,   benchRepSchemes,   'benchPlates');
+const generateDeadliftWarmups = ()=>genWarmups('deadlift',deadliftWarmups,deadliftRepSchemes,'deadliftPlates');
+
+/* ======= Reset ======= */
+function resetLift(prefix, platesOutId, errId){
+  for(let i=1;i<=3;i++){ const el=document.getElementById(prefix+i); if(el) el.value=''; }
+  for(let i=1;i<=8;i++){
+    const w=document.getElementById(`${prefix}Warmup${i}Weight`);
+    const r=document.getElementById(`${prefix}Warmup${i}Reps`);
+    if(w) w.value=''; if(r) r.value='';
+  }
+  const platesOut=document.getElementById(platesOutId); if(platesOut) platesOut.textContent='';
+  const err=document.getElementById(errId); if(err) err.style.display='none';
+}
+
+/* ======= CSV ======= */
+function exportCSV(){
+  const fields = [
+    'eventName','lifterName','weightClass','competitionDate','weighInTime',
+    'squatRackHeight','squatStands','benchRackHeight','handOut','benchSafetyHeight',
+    'squat1','squat2','squat3','bench1','bench2','bench3','deadlift1','deadlift2','deadlift3'
+  ];
+  for(let i=1;i<=8;i++){ fields.push(`squatWarmup${i}Weight`,`squatWarmup${i}Reps`); }
+  for(let i=1;i<=8;i++){ fields.push(`benchWarmup${i}Weight`,`benchWarmup${i}Reps`); }
+  for(let i=1;i<=8;i++){ fields.push(`deadliftWarmup${i}Weight`,`deadliftWarmup${i}Reps`); }
+  const header = fields.join(',');
+  const row = fields.map(id => { const v = document.getElementById(id)?.value ?? ''; return `"${String(v).replace(/"/g,'""')}"`; }).join(',');
+  const blob = new Blob([header+'\n'+row], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const name = document.getElementById('lifterName').value || 'Meet';
+  a.download = `${name}_plan.csv`; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ======= PDF (black, no logo) ======= */
+function generatePDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('portrait','mm','a4');
+  const pageWidth = 210, pageHeight = 297, margin = 15;
+  const secondary = [44,62,80];
+
+  doc.setFillColor(0,0,0);
+  doc.rect(margin, margin, pageWidth-2*margin, 25, 'F');
+  doc.setFontSize(16); doc.setTextColor(255,255,255); doc.text('POWERLIFTING MEET PREP', margin+40, margin+15);
+
+  let yPos = margin + 35;
+  doc.setFontSize(10); doc.setTextColor(...secondary);
+
+  const eventName=document.getElementById('eventName').value||'';
+  const lifterName=document.getElementById('lifterName').value||'';
+  const weightClass=document.getElementById('weightClass').value||'';
+  const competitionDate=document.getElementById('competitionDate').value||'';
+  const weighInTime=document.getElementById('weighInTime').value||'';
+  doc.text(`Event: ${eventName}`, margin, yPos);
+  doc.text(`Lifter: ${lifterName}`, margin+95, yPos); yPos += 6;
+  doc.text(`Weight Class: ${weightClass}`, margin, yPos);
+  doc.text(`Competition Date: ${competitionDate}`, margin+60, yPos);
+  doc.text(`Weigh-in Time: ${weighInTime}`, margin+130, yPos);
+  yPos += 10;
+
+  const squatRackHeight=document.getElementById('squatRackHeight').value||'';
+  const squatStands=document.getElementById('squatStands').value||'';
+  const benchRackHeight=document.getElementById('benchRackHeight').value||'';
+  const handOut=document.getElementById('handOut').value||'';
+  const benchSafetyHeight=document.getElementById('benchSafetyHeight').value||'';
+  doc.text(`Squat Rack Height: ${squatRackHeight}`, margin, yPos);
+  doc.text(`Stands: ${squatStands}`, margin+50, yPos);
+  doc.text(`Bench Rack: ${benchRackHeight}`, margin+90, yPos);
+  doc.text(`Hand Out: ${handOut}`, margin+130, yPos);
+  doc.text(`Safety: ${benchSafetyHeight}`, margin+160, yPos);
+  yPos += 15;
+
+  function addLift(lift, prefix){
+    doc.setFillColor(0,0,0); doc.rect(margin, yPos, pageWidth-2*margin, 8, 'F');
+    doc.setFontSize(12); doc.setTextColor(255,255,255); doc.text(lift, margin+80, yPos+6); yPos += 12;
+
+    doc.setFontSize(8); doc.setTextColor(...secondary);
+    doc.text('Set', margin+5, yPos); doc.text('Weight', margin+25, yPos); doc.text('Reps', margin+50, yPos); doc.text('Attempts', margin+90, yPos);
+    yPos += 5; const startY = yPos;
+
+    const maxSets = prefix==='bench'?6:7;
+    for(let i=1;i<=maxSets;i++){
+      const w=document.getElementById(`${prefix}Warmup${i}Weight`).value || '';
+      const r=document.getElementById(`${prefix}Warmup${i}Reps`).value || '';
+      if(w || r){ doc.text(String(i), margin+5, yPos); doc.text(String(w), margin+25, yPos); doc.text(String(r), margin+50, yPos); yPos += 4; }
+    }
+    let attemptY=startY;
+    for(let i=1;i<=3;i++){
+      const w=document.getElementById(`${prefix}${i}`).value || '';
+      doc.text(`${i}${i===1?'st':i===2?'nd':'rd'}:`, margin+90, attemptY);
+      doc.text(String(w), margin+105, attemptY); attemptY += 6;
+    }
+    yPos = Math.max(yPos, attemptY) + 8;
+  }
+  addLift('SQUAT','squat'); addLift('BENCH PRESS','bench'); addLift('DEADLIFT','deadlift');
+
+  doc.setFontSize(8); doc.setTextColor(150,150,150);
+  doc.text('Generated by Powerlifting Meet Prep Tool', margin, pageHeight-10);
+  const fileName=(document.getElementById('lifterName').value||'Meet')+'_Meet_Prep.pdf'; doc.save(fileName);
+}
+
+/* ======= Bind buttons (Kajabi-safe) ======= */
+document.addEventListener('DOMContentLoaded', function(){
+  const on=(id,fn)=>{ const el=document.getElementById(id); if(el) el.addEventListener('click', fn); };
+
+  on('btnSquatCalc',  calculateSquatAttempts);
+  on('btnSquatWU',    generateSquatWarmups);
+  on('btnSquatReset', ()=>resetLift('squat','squatPlates','squatErr'));
+
+  on('btnBenchCalc',  calculateBenchAttempts);
+  on('btnBenchWU',    generateBenchWarmups);
+  on('btnBenchReset', ()=>resetLift('bench','benchPlates','benchErr'));
+
+  on('btnDeadCalc',   calculateDeadliftAttempts);
+  on('btnDeadWU',     generateDeadliftWarmups);
+  on('btnDeadReset',  ()=>resetLift('deadlift','deadliftPlates','deadErr'));
+
+  on('btnPDF', generatePDF);
+  on('btnCSV', exportCSV);
+});
+</script>
+
+<!-- Kajabi centering override -->
+<style>
+  .pl-calculator-wrapper .pl-form-container label,
+  .pl-calculator-wrapper .pl-attempt-label,
+  .pl-calculator-wrapper .pl-warmup-grid > div { text-align: center !important; }
+  .pl-calculator-wrapper .pl-form-container input[type="text"],
+  .pl-calculator-wrapper .pl-form-container input[type="number"],
+  .pl-calculator-wrapper .pl-form-container input[type="date"],
+  .pl-calculator-wrapper .pl-form-container input[type="time"],
+  .pl-calculator-wrapper .pl-form-container select,
+  .pl-calculator-wrapper .pl-warmup-grid input[type="number"],
+  .pl-calculator-wrapper .pl-warmup-grid input[type="text"]{ text-align: center !important; }
+  .pl-calculator-wrapper .pl-form-container select {
+    text-align-last: center !important; -moz-text-align-last: center !important;
+  }
+  .pl-calculator-wrapper input::placeholder { text-align: center; }
+</style>
+</body>
+</html>
