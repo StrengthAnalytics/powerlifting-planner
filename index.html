@@ -504,4 +504,18 @@ document.addEventListener('DOMContentLoaded', function(){
   .pl-calculator-wrapper input::placeholder { text-align: center; }
 </style>
 </body>
+ <script>
+(function(){
+  function sendHeight(){
+    var h = Math.max(
+      document.body.scrollHeight, document.documentElement.scrollHeight,
+      document.body.offsetHeight, document.documentElement.offsetHeight
+    );
+    parent.postMessage({ plpHeight: h }, "*");
+  }
+  window.addEventListener("load", sendHeight);
+  window.addEventListener("resize", sendHeight);
+  if (window.ResizeObserver) new ResizeObserver(sendHeight).observe(document.body);
+})();
+</script>
 </html>
